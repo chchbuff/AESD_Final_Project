@@ -47,7 +47,6 @@ static void pabort(const char *s);
 static void print_usage(const char *prog);
 static void parse_opts(int argc, char *argv[]);
 
-
 static void transfer(int fd);
 static int pulse_read(int fd);
 
@@ -290,8 +289,8 @@ static int pulse_read(int fd)
 	// transmit buffer
 	uint8_t data[] = {
 		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
-		0x00,
-		0x00,	// dummy data
+		0xC0,
+		0xC0,	// dummy data
 	};
 	// receive buffer
 	uint8_t value[ARRAY_SIZE(data)] = {0, };
@@ -315,7 +314,7 @@ static int pulse_read(int fd)
 
 	for (i = 0; i < ARRAY_SIZE(data); i++)
 	{
-		printf("%d", value[i]);
+		printf("%d\n", value[i]);
 	}
 	puts("");
 	puts("");
