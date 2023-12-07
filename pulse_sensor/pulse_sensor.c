@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	
 	if(argc > 1)
 	{
-		if(strcmp("test",argv[0]) == 0)
+		if(strcmp("test",argv[1]) == 0)
 		{
 			execute_test = 1;
 		}
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 		ret = pulse_read(fd);
 		if(ret == -1)
 			goto exit;
-		 usleep(200);
+		 sleep(1);
 	}
 	
 exit:
@@ -173,7 +173,9 @@ static void transfer(int fd)
 	puts("");
 }
 
-
+/*****************************************
+ * @brief	SPI pulse sensor read fn
+ ****************************************/
 static int pulse_read(int fd)
 {
 	printf("Reading pulse rate sensor\n");
@@ -183,11 +185,11 @@ static int pulse_read(int fd)
 	// Channel 0 of 8-channel ADC
 	uint8_t channel_n = 0;
 	
-	// data to be transferred
+	// transmit buffer
 	uint8_t data[] = {
 		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
 	};
-	// data received
+	// receive buffer
 	uint8_t value[ARRAY_SIZE(data)] = {0, };
 	
 	// SPI Transfer data struct
@@ -206,11 +208,10 @@ static int pulse_read(int fd)
 		printf("can't send spi message");
 		return -1;
 	}
-		//pabort("can't send spi message");
 
 	for (i = 0; i < ARRAY_SIZE(data); i++)
 	{
-		printf("%.2X ", value[i]);
+		printf("%d", value[i]);
 	}
 	puts("");
 	puts("");
