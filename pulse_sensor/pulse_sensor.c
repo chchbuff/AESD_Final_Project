@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
@@ -37,11 +38,16 @@
 static const char *device = "/dev/spidev0.0";
 static uint8_t mode;
 static uint8_t bits = 8;
-static uint32_t speed = 500000;
-static uint16_t delay;
+static uint32_t speed = 250000;
+static uint16_t delay = 100;
+int execute_test = 0;
 
 /**************************** Function Declarations *********************/
 static void pabort(const char *s);
+static void print_usage(const char *prog);
+static void parse_opts(int argc, char *argv[]);
+
+
 static void transfer(int fd);
 static int pulse_read(int fd);
 
@@ -50,15 +56,16 @@ int main(int argc, char *argv[])
 {
 	int ret = 0;
 	int fd;
-	int execute_test = 0;
 	
-	if(argc > 1)
+	parse_opts(argc, argv);
+	
+	/*if(argc > 1)
 	{
 		if(strcmp("test",argv[1]) == 0)
 		{
 			execute_test = 1;
 		}
-	}
+	}*/
 
 	fd = open(device, O_RDWR);
 	if (fd < 0)
@@ -137,6 +144,101 @@ static void pabort(const char *s)
 }
 
 /*****************************************
+ * @brief	To print usage
+ ****************************************/
+static void print_usage(const char *prog)
+{
+	printf("Usage: %s [-DsbdlHOLC3]\n", prog);
+	puts("  -D --device   device to use (default /dev/spidev1.1)\n"
+	     "  -s --speed    max speed (Hz)\n"
+	     "  -d --delay    delay (usec)\n"
+	     "  -b --bpw      bits per word \n"
+	     "  -l --loop     loopback\n"
+	     "  -H --cpha     clock phase\n"
+	     "  -O --cpol     clock polarity\n"
+	     "  -L --lsb      least significant bit first\n"
+	     "  -C --cs-high  chip select active high\n"
+	     "  -3 --3wire    SI/SO signals shared\n");
+	exit(1);
+}
+
+/*****************************************
+ * @brief	To parse arguments
+ ****************************************/
+static void parse_opts(int argc, char *argv[])
+{
+	while (1) {
+		static const struct option lopts[] = {
+			{ "device",  1, 0, 'D' },
+			{ "speed",   1, 0, 's' },
+			{ "delay",   1, 0, 'd' },
+			{ "bpw",     1, 0, 'b' },
+			{ "loop",    0, 0, 'l' },
+			{ "cpha",    0, 0, 'H' },
+			{ "cpol",    0, 0, 'O' },
+			{ "lsb",     0, 0, 'L' },
+			{ "cs-high", 0, 0, 'C' },
+			{ "3wire",   0, 0, '3' },
+			{ "no-cs",   0, 0, 'N' },
+			{ "ready",   0, 0, 'R' },
+			{ "test",   0, 0, 't' },
+			{ NULL, 0, 0, 0 },
+		};
+		int c;
+
+		c = getopt_long(argc, argv, "D:s:d:b:lHOLC3NRt", lopts, NULL);
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'D':
+			device = optarg;
+			break;
+		case 's':
+			speed = atoi(optarg);
+			break;
+		case 'd':
+			delay = atoi(optarg);
+			break;
+		case 'b':
+			bits = atoi(optarg);
+			break;
+		case 'l':
+			mode |= SPI_LOOP;
+			break;
+		case 'H':
+			mode |= SPI_CPHA;
+			break;
+		case 'O':
+			mode |= SPI_CPOL;
+			break;
+		case 'L':
+			mode |= SPI_LSB_FIRST;
+			break;
+		case 'C':
+			mode |= SPI_CS_HIGH;
+			break;
+		case '3':
+			mode |= SPI_3WIRE;
+			break;
+		case 'N':
+			mode |= SPI_NO_CS;
+			break;
+		case 'R':
+			mode |= SPI_READY;
+			break;
+		case 't':
+			execute_test = 1;
+			break;
+		default:
+			print_usage(argv[0]);
+			break;
+		}
+	}
+}
+
+/*****************************************
  * @brief	SPI Transfer data function
  ****************************************/
 static void transfer(int fd)
@@ -190,7 +292,7 @@ static int pulse_read(int fd)
 		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
 	};
 	// receive buffer
-	uint8_t value[ARRAY_SIZE(data)] = {0, };
+	uint8_t value[ARRAY_SIZE(data)+1] = {0, };
 	
 	// SPI Transfer data struct
 	struct spi_ioc_transfer tr = {
@@ -209,7 +311,7 @@ static int pulse_read(int fd)
 		return -1;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(data); i++)
+	for (i = 0; i < ARRAY_SIZE(value); i++)
 	{
 		printf("%d", value[i]);
 	}
