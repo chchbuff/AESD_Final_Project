@@ -288,9 +288,11 @@ static int pulse_read(int fd)
 	
 	// transmit buffer
 	uint8_t data[] = {
-		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
-		0xC0,
-		0xC0,	// dummy data
+		//((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
+		//0xC0,
+		//0xC0,	// dummy data
+		0x60,
+		0x00
 	};
 	// receive buffer
 	uint8_t value[ARRAY_SIZE(data)] = {0, };
