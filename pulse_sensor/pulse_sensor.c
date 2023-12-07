@@ -23,14 +23,15 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
+#include <string.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 
 /**************************** Defines  **********************************/
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define ARRAY_SIZE(a) 			(sizeof(a) / sizeof((a)[0]))
+#define ADC_CHANNEL_SELECT_MASK 	(0xC0)
 
 /**************************** Global Variables **************************/
 static const char *device = "/dev/spidev0.0";
@@ -40,14 +41,24 @@ static uint32_t speed = 500000;
 static uint16_t delay;
 
 /**************************** Function Declarations *********************/
-static void transfer(int fd);
 static void pabort(const char *s);
+static void transfer(int fd);
+static int pulse_read(int fd);
 
 /**************************** main function *****************************/
 int main(int argc, char *argv[])
 {
 	int ret = 0;
 	int fd;
+	int execute_test = 0;
+	
+	if(argc > 1)
+	{
+		if(strcmp("test",argv[0]) == 0)
+		{
+			execute_test = 1;
+		}
+	}
 
 	fd = open(device, O_RDWR);
 	if (fd < 0)
@@ -89,10 +100,26 @@ int main(int argc, char *argv[])
 	printf("spi mode: %d\n", mode);
 	printf("bits per word: %d\n", bits);
 	printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
-
-	transfer(fd);
-
+	
+	if(execute_test == 1)
+	{
+		printf("\n\n*** Execute Test ***\n\n");
+		transfer(fd);
+		goto exit;
+	}
+	
+	while(1)
+	{
+		ret = pulse_read(fd);
+		if(ret == -1)
+			goto exit;
+		 usleep(200);
+	}
+	
+exit:
 	close(fd);
+	
+	printf("\n\n*** End App ***\n\n");
 
 	return ret;
 }
@@ -146,3 +173,48 @@ static void transfer(int fd)
 	puts("");
 }
 
+
+static int pulse_read(int fd)
+{
+	printf("Reading pulse rate sensor\n");
+	
+	int ret = 0;
+	int i;
+	// Channel 0 of 8-channel ADC
+	uint8_t channel_n = 0;
+	
+	// data to be transferred
+	uint8_t data[] = {
+		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
+	};
+	// data received
+	uint8_t value[ARRAY_SIZE(data)] = {0, };
+	
+	// SPI Transfer data struct
+	struct spi_ioc_transfer tr = {
+		.tx_buf = (unsigned long)data,
+		.rx_buf = (unsigned long)value,
+		.len = ARRAY_SIZE(data),
+		.delay_usecs = delay,
+		.speed_hz = speed,
+		.bits_per_word = bits,
+	};
+	
+	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+	if (ret < 1)
+	{
+		printf("can't send spi message");
+		return -1;
+	}
+		//pabort("can't send spi message");
+
+	for (i = 0; i < ARRAY_SIZE(data); i++)
+	{
+		printf("%.2X ", value[i]);
+	}
+	puts("");
+	puts("");
+	
+	return 0;
+	
+}
