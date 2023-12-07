@@ -290,9 +290,11 @@ static int pulse_read(int fd)
 	// transmit buffer
 	uint8_t data[] = {
 		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
+		0x00,
+		0x00,	// dummy data
 	};
 	// receive buffer
-	uint8_t value[ARRAY_SIZE(data)+1] = {0, };
+	uint8_t value[ARRAY_SIZE(data)] = {0, };
 	
 	// SPI Transfer data struct
 	struct spi_ioc_transfer tr = {
@@ -311,7 +313,7 @@ static int pulse_read(int fd)
 		return -1;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(value); i++)
+	for (i = 0; i < ARRAY_SIZE(data); i++)
 	{
 		printf("%d", value[i]);
 	}
