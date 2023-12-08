@@ -32,7 +32,7 @@
 
 /**************************** Defines  **********************************/
 #define ARRAY_SIZE(a) 			(sizeof(a) / sizeof((a)[0]))
-#define ADC_CHANNEL_SELECT_MASK 	(0xC0)
+#define ADC_CHANNEL_0 			(0xC0)
 
 /**************************** Global Variables **************************/
 static const char *device = "/dev/spidev0.0";
@@ -57,14 +57,6 @@ int main(int argc, char *argv[])
 	int fd;
 	
 	parse_opts(argc, argv);
-	
-	/*if(argc > 1)
-	{
-		if(strcmp("test",argv[1]) == 0)
-		{
-			execute_test = 1;
-		}
-	}*/
 
 	fd = open(device, O_RDWR);
 	if (fd < 0)
@@ -283,16 +275,13 @@ static int pulse_read(int fd)
 	
 	int ret = 0;
 	int i;
-	// Channel 0 of 8-channel ADC
-	uint8_t channel_n = 1;
+	uint16_t ADC_value = 0;
 	
 	// transmit buffer
 	uint8_t data[] = {
-		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
+		ADC_CHANNEL_0,
 		0x00,
 		0x00,	// dummy data
-		//0x60,
-		//0x00
 	};
 	// receive buffer
 	uint8_t value[ARRAY_SIZE(data)] = {0, };
@@ -313,12 +302,9 @@ static int pulse_read(int fd)
 		printf("can't send spi message");
 		return -1;
 	}
-
-	for (i = 0; i < ARRAY_SIZE(data); i++)
-	{
-		printf("%d\n", value[i]);
-	}
-	puts("");
+	
+	ADC_value = ( ((value[0] & 0x07) << 7) | (value[1] & 0xFE) );
+	printf("%d\n\n", ADC_value);
 	
 	return 0;
 	
