@@ -322,7 +322,7 @@ static void transfer(int fd)
  ****************************************/
 static int pulse_read(int fd)
 {
-	printf("Reading pulse rate sensor\n");
+	//printf("Reading pulse rate sensor\n");
 	
 	int ret = 0;
 	uint16_t ADC_value = 0;
@@ -354,14 +354,15 @@ static int pulse_read(int fd)
 	}
 	
 	ADC_value = ( ((value[0] & 0x07) << 7) | (value[1] & 0xFE) );
-	printf("%d\n\n", ADC_value);
+	//printf("%d\n\n", ADC_value);
 	
-	return 0;	
+	return ADC_value;	
 }
 
 
 void get_bpm()
 {
+	printf("Started BPM conversion");
 	// initilaize Pulse Sensor beat finder
 	initPulseSensorVariables();
 	// start sampling
@@ -398,53 +399,58 @@ uint64_t micros()
 
 void initPulseSensorVariables(void)
 {
-    for (int i = 0; i < 10; ++i)
-    {
-        rate[i] = 0;
-    }
-    QS = 0;
-    BPM = 0;
-    IBI = 600;                  // 600ms per beat = 100 Beats Per Minute (BPM)
-    Pulse = 0;
-    sampleCounter = 0;
-    lastBeatTime = 0;
-    P = 512;                    // peak at 1/2 the input range of 0..1023
-    T = 512;                    // trough at 1/2 the input range.
-    threshSetting = 550;        // used to seed and reset the thresh variable
-    thresh = 550;     // threshold a little above the trough
-    amp = 100;                  // beat amplitude 1/10 of input range.
-    firstBeat = 1;           // looking for the first beat
-    secondBeat = 0;         // not yet looking for the second beat in a row
-    lastTime = micros();
-    timeOutStart = lastTime;
+	printf("initPulseSensorVariables");
+    	for (int i = 0; i < 10; ++i)
+    	{
+        	rate[i] = 0;
+    	}
+    	QS = 0;
+    	BPM = 0;
+    	IBI = 600;                  // 600ms per beat = 100 Beats Per Minute (BPM)
+    	Pulse = 0;
+	sampleCounter = 0;
+	lastBeatTime = 0;
+	P = 512;                    // peak at 1/2 the input range of 0..1023
+	T = 512;                    // trough at 1/2 the input range.
+	threshSetting = 550;        // used to seed and reset the thresh variable
+	thresh = 550;     // threshold a little above the trough
+	amp = 100;                  // beat amplitude 1/10 of input range.
+	firstBeat = 1;           // looking for the first beat
+	secondBeat = 0;         // not yet looking for the second beat in a row
+	lastTime = micros();
+	timeOutStart = lastTime;
 }
 
 void startTimer(int latency, unsigned int micros)
 {
-    signal(SIGALRM, getPulse);
-    
-    // generate SIGALRM signal
-    // after latency interval and
-    // every micros interval
-    int err = ualarm(latency, micros);
-    if(err == 0)
-    {
-        if(micros > 0)
-        {
-            printf("ualarm ON\n");
-        }
-        else
-        {
-            printf("ualarm OFF\n");
-        }
-    }
+	printf("startTimer");
+	signal(SIGALRM, getPulse);
+
+	// generate SIGALRM signal
+	// after latency interval and
+	// every micros interval
+	int err = ualarm(latency, micros);
+	if(err == 0)
+	{
+		if(micros > 0)
+		{
+	    		printf("ualarm ON\n");
+		}
+		else
+		{
+	    		printf("ualarm OFF\n");
+		}	
+	}
 }
 
 
 void getPulse(int sig_num)
 {
+	printf("getPulse");
+	
 	if(sig_num == SIGALRM)
     	{
+    		printf("SIGALARM");
         	thisTime = micros();
 		Signal = pulse_read(spi_fd);
 		elapsedTime = thisTime - lastTime;
@@ -462,6 +468,7 @@ void getPulse(int sig_num)
 		// avoid dichrotic noise by waiting 3/5 of last IBI
 		if (Signal < thresh && N > (IBI / 5) * 3)
 		{
+			printf("Trough");
 			// T is the trough
 			if (Signal < T) 
 			{
@@ -472,6 +479,7 @@ void getPulse(int sig_num)
   		// thresh condition helps avoid noise
   		if (Signal > thresh && Signal > P)
   		{
+  			printf("Peak");
   			// P is the peak
     			P = Signal;
   		}
@@ -489,9 +497,10 @@ void getPulse(int sig_num)
       				// keep track of time for next pulse 
 		      		lastBeatTime = sampleCounter;
 		      		
-		      		// if this is the second beat, if secondBeat == TRUE
+		      		// if this is the second beat, if secondBeat == 1
 		      		if (secondBeat)
 		      		{
+		      			printf("second beat");
 		      			// clear secondBeat flag
 		      			secondBeat = 0;
         				// seed the running total to get a realisitic BPM at startup
@@ -501,9 +510,10 @@ void getPulse(int sig_num)
         				}
       				}
       				
-      				// if it's the first time we found a beat, if firstBeat == TRUE
+      				// if it's the first time we found a beat, if firstBeat == 1
       				if (firstBeat) 
       				{
+      					printf("first beat");
       					// clear firstBeat flag
       					firstBeat = 0;
       					// set the second beat flag
