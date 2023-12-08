@@ -284,15 +284,15 @@ static int pulse_read(int fd)
 	int ret = 0;
 	int i;
 	// Channel 0 of 8-channel ADC
-	uint8_t channel_n = 0;
+	uint8_t channel_n = 1;
 	
 	// transmit buffer
 	uint8_t data[] = {
-		//((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
+		((ADC_CHANNEL_SELECT_MASK) | (channel_n << 3)),
 		//0xC0,
 		//0xC0,	// dummy data
-		0x60,
-		0x00
+		//0x60,
+		//0x00
 	};
 	// receive buffer
 	uint8_t value[ARRAY_SIZE(data)] = {0, };
@@ -318,7 +318,6 @@ static int pulse_read(int fd)
 	{
 		printf("%d\n", value[i]);
 	}
-	puts("");
 	puts("");
 	
 	return 0;
