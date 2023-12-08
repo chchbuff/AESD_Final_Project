@@ -362,11 +362,13 @@ static int pulse_read(int fd)
 
 void get_bpm()
 {
-	printf("Started BPM conversion");
+	//printf("Started BPM conversion");
 	// initilaize Pulse Sensor beat finder
 	initPulseSensorVariables();
 	// start sampling
 	startTimer(OPT_R, OPT_U);
+	
+	printf("\tsampleCounter\tSignal\tBPM\tIBI\tjitter\n");
 	
 	while(1)
     	{
@@ -376,8 +378,7 @@ void get_bpm()
             		timeOutStart = micros();
             		
             		// PRINT DATA TO TERMINAL
-            		printf("sampleCounter\t\tSignal\t\tBPM\t\tIBI\t\tjitter\n");
-            		printf("%d\t\t%d\t\t%d\t\t%d\t\t%d\n",sampleCounter,Signal,BPM,IBI,jitter);
+            		printf("\t%d\t%d\t%d\t%d\t%d\n",sampleCounter,Signal,BPM,IBI,jitter);
 		    	
          	}
          	if((micros() - timeOutStart) > TIME_OUT)
@@ -399,7 +400,7 @@ uint64_t micros()
 
 void initPulseSensorVariables(void)
 {
-	printf("initPulseSensorVariables");
+	//printf("initPulseSensorVariables");
     	for (int i = 0; i < 10; ++i)
     	{
         	rate[i] = 0;
@@ -423,7 +424,7 @@ void initPulseSensorVariables(void)
 
 void startTimer(int latency, unsigned int micros)
 {
-	printf("startTimer");
+	//printf("startTimer");
 	signal(SIGALRM, getPulse);
 
 	// generate SIGALRM signal
@@ -446,11 +447,11 @@ void startTimer(int latency, unsigned int micros)
 
 void getPulse(int sig_num)
 {
-	printf("getPulse");
+	//printf("getPulse");
 	
 	if(sig_num == SIGALRM)
     	{
-    		printf("SIGALARM");
+    		//printf("SIGALARM");
         	thisTime = micros();
 		Signal = pulse_read(spi_fd);
 		elapsedTime = thisTime - lastTime;
@@ -468,7 +469,6 @@ void getPulse(int sig_num)
 		// avoid dichrotic noise by waiting 3/5 of last IBI
 		if (Signal < thresh && N > (IBI / 5) * 3)
 		{
-			printf("Trough");
 			// T is the trough
 			if (Signal < T) 
 			{
@@ -479,7 +479,6 @@ void getPulse(int sig_num)
   		// thresh condition helps avoid noise
   		if (Signal > thresh && Signal > P)
   		{
-  			printf("Peak");
   			// P is the peak
     			P = Signal;
   		}
