@@ -274,7 +274,6 @@ static int pulse_read(int fd)
 	printf("Reading pulse rate sensor\n");
 	
 	int ret = 0;
-	int i;
 	uint16_t ADC_value = 0;
 	
 	// transmit buffer
