@@ -79,6 +79,7 @@ volatile int BPM = 0;
 volatile int IBI = 600;    		// 600ms per beat = 100 Beats Per Minute
 volatile int Pulse = 0;
 volatile int amp = 100;            	// beat amplitude 1/10 of input range.
+char BPM_MQTT_cmd[256];		// to store MQTT command format
 
 /**************************** Function Declarations *********************/
 /* Application functions */
@@ -351,13 +352,14 @@ static int pulse_read(int fd)
 
 void get_bpm()
 {
+	int ret;
 	//printf("Started BPM conversion");
 	// initilaize Pulse Sensor beat finder
 	initPulseSensorVariables();
 	// start sampling
 	startTimer(OPT_R, OPT_U);
 	
-	printf("\tsampleCounter\tSignal\tBPM\tIBI\tjitter\n");
+	//printf("\tsampleCounter\tSignal\tBPM\tIBI\tjitter\n");
 	
 	while(1)
     	{
@@ -367,8 +369,23 @@ void get_bpm()
             		timeOutStart = micros();
             		
             		// PRINT DATA TO TERMINAL
-            		printf("\t%d\t%d\t%d\t%d\t%d\n",sampleCounter,Signal,BPM,IBI,jitter);
-		    	
+            		//printf("\t%d\t%d\t%d\t%d\t%d\n",sampleCounter,Signal,BPM,IBI,jitter);
+            		printf("BPM: %d\n", BPM);
+            		
+            		if(BPM >=70 && BPM <= 90)
+            		{
+			    	//make the command to execute for sending temperature data to server
+			    	snprintf(BPM_MQTT_cmd, sizeof(BPM_MQTT_cmd), "python3 /bin/MQTT/client.py BPM:%d",BPM);
+
+			    	//Execute the command to send data
+			    	ret = system(BPM_MQTT_cmd);
+
+			    	if(ret)
+			    	{
+			 		printf("system: error status %d", ret);
+					break;
+			    	}
+		    	}   	
          	}
          	if((micros() - timeOutStart) > TIME_OUT)
          	{
