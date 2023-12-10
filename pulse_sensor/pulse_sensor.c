@@ -41,10 +41,10 @@
 #define ARRAY_SIZE(a) 			(sizeof(a) / sizeof((a)[0]))
 #define ADC_CHANNEL_0 			(0xC0)
 
-/* For BPM conversion */
-#define OPT_R 10        // min uS allowed lag btw alarm and callback
-#define OPT_U 2000      // sample time uS between alarms
-#define TIME_OUT 30000000    // uS time allowed without callback response
+//For BPM conversion
+#define OPT_R (10)        	// min uS allowed lag btw alarm and callback
+#define OPT_U (2000)      	// sample time uS between alarms
+#define TIME_OUT (30000000)    // uS time allowed without callback response
 #define SEC_TO_US(sec) ((sec)*1000000) // Convert seconds to microseconds
 #define NS_TO_US(ns)    ((ns)/1000) // Convert nanoseconds to microseconds
 
@@ -79,7 +79,6 @@ volatile int BPM = 0;
 volatile int IBI = 600;    		// 600ms per beat = 100 Beats Per Minute
 volatile int Pulse = 0;
 volatile int amp = 100;            	// beat amplitude 1/10 of input range.
-char BPM_MQTT_cmd[256];		// to store MQTT command format
 
 /**************************** Function Declarations *********************/
 /* Application functions */
@@ -313,7 +312,6 @@ static void spi_transfer_test(int fd)
  ****************************************/
 static int pulse_read(int fd)
 {
-	
 	int ret = 0;
 	uint16_t ADC_value = 0;
 	
@@ -339,7 +337,7 @@ static int pulse_read(int fd)
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret < 1)
 	{
-		printf("can't send spi message");
+		printf("can't send spi message\n");
 		return -1;
 	}
 	
@@ -353,13 +351,12 @@ static int pulse_read(int fd)
 void get_bpm()
 {
 	int ret;
-	//printf("Started BPM conversion");
+	// to store MQTT command format
+	char BPM_MQTT_cmd[256];
 	// initilaize Pulse Sensor beat finder
 	initPulseSensorVariables();
 	// start sampling
 	startTimer(OPT_R, OPT_U);
-	
-	//printf("\tsampleCounter\tSignal\tBPM\tIBI\tjitter\n");
 	
 	while(1)
     	{
@@ -369,12 +366,11 @@ void get_bpm()
             		timeOutStart = micros();
             		
             		// PRINT DATA TO TERMINAL
-            		//printf("\t%d\t%d\t%d\t%d\t%d\n",sampleCounter,Signal,BPM,IBI,jitter);
             		printf("BPM: %d\n", BPM);
             		
             		if(BPM >=70 && BPM <= 90)
             		{
-			    	//make the command to execute for sending temperature data to server
+			    	//command to execute for sending BPM data to server
 			    	snprintf(BPM_MQTT_cmd, sizeof(BPM_MQTT_cmd), "python3 /bin/MQTT/client.py BPM:%d",BPM);
 
 			    	//Execute the command to send data
@@ -382,20 +378,23 @@ void get_bpm()
 
 			    	if(ret)
 			    	{
-			 		printf("system: error status %d", ret);
+			 		printf("system: error status %d\n", ret);
 					break;
+			    	}
+			    	else
+			    	{
+			    		printf("Sending BPM data to MQTT server\n\n");
 			    	}
 		    	}   	
          	}
          	if((micros() - timeOutStart) > TIME_OUT)
          	{
-         		printf("Program timed out");
+         		printf("Program timed out\n");
             		break;
         	}
     	}
 }
 
-/// Get a time stamp in microseconds.
 uint64_t micros()
 {
     struct timespec ts;
