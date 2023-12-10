@@ -42,6 +42,7 @@
 #define FAILURE              -1
 #define MAX_BUFF_LEN          5
 #define MAX_STR_LEN           15
+#define MAX_CMD_STR_LEN       100
 
 /* Global definitions */
 
@@ -133,6 +134,9 @@ int main(int argc, char *argv[])
     uint8_t i2c_node = I2C_NODE;
     int file_id = -1;
     float temperature_value = 0;
+    char temp_MQTT_cmd[MAX_CMD_STR_LEN] = {0};
+    int return_value = -1;
+
     if (argc > 2)
     {
         i2c_node = atoi(argv[1]);
@@ -155,7 +159,23 @@ int main(int argc, char *argv[])
             goto exit;
         }
         
-        syslog(LOG_DEBUG, "Temperature value = %fC", temperature_value);
+        printf("Temperature value = %fC\n", temperature_value);
+
+        // command to send temperature data to MQTT server
+	    snprintf(temp_MQTT_cmd, sizeof(temp_MQTT_cmd), "python3 /bin/MQTT/client.py Temperature:%fC",temperature_value);
+
+        // execute the MQTT client python application
+	    return_value = system(temp_MQTT_cmd);
+
+	    if(return_value)
+	    {
+	        printf("Error sending data to MQTT server %d\n", return_value);
+			break;
+	    }
+	    else
+	    {
+	        printf("Sent Temperature data to MQTT server\n");
+	    }
         
         usleep(100);
     }
