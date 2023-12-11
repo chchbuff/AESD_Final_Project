@@ -368,7 +368,8 @@ void get_bpm()
             		// PRINT DATA TO TERMINAL
             		printf("BPM: %d\n", BPM);
             		
-            		if(BPM >=70 && BPM <= 90)
+            		// resting heart rate range
+            		if(BPM >=60 && BPM <= 100)
             		{
 			    	//command to execute for sending BPM data to server
 			    	snprintf(BPM_MQTT_cmd, sizeof(BPM_MQTT_cmd), "python3 /bin/MQTT/client.py BPM:%d",BPM);
